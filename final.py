@@ -54,8 +54,8 @@ oo     .d8P 888   888 888   .o8  888     d8(  888   888  `88b.  888    .o    `88
 [====================================================================================]
 """ % (fg(218)))
 
-room = input("Input Room Name: ")
-target = int(60)
+room = input(f"{bloo}\n    ► Room Id: {white}")
+target = int(input(f"{bloo}\n    ► Target Percentage: {white}"))
 
 # Login to room
 data = '{"role":"student","name":"'+room+'","tz_offset":-480}'
@@ -89,12 +89,13 @@ optionsAnswer = requests.options('https://api.socrative.com/students/api/respons
 # Bruteforce Test
 def bruteforceAnswers(response, headers9, cookies, activityInstanceId, target):
     global quizLength
-    print(f"{whitebg}{red}B{orange}r{yellow}u{good}t{bloo}e{purp}f{red}o{orange}r{yellow}c{good}e {bloo}A{purp}n{red}s{orange}w{yellow}e{good}r{bloo}s {purp}S{red}t{orange}a{yellow}r{good}t{bloo}e{purp}d {red}:{orange}D{reset}\n")
+    print(f"\n    ► {whitebg}{red}B{orange}r{yellow}u{good}t{bloo}e{purp}f{red}o{orange}r{yellow}c{good}e {bloo}A{purp}n{red}s{orange}w{yellow}e{good}r{bloo}s {purp}S{red}t{orange}a{yellow}r{good}t{bloo}e{purp}d {red}:{orange}D{reset}\n")
     quizData = json.loads(response.text)
     quizLength = len(quizData['questions'])
     answered = 0
     # Make it round to nearest half?
     targ = round(target/100 * quizLength)
+    print(targ)
     
     for x in range(quizLength):
         answerIds = []
@@ -102,7 +103,7 @@ def bruteforceAnswers(response, headers9, cookies, activityInstanceId, target):
         questionNumber = json.loads(response.text)['questions'][x]['order']
         questionId = json.loads(response.text)['questions'][x]['question_id']
         
-        if answered != targ:
+        if answered <= targ:
             if questionType != "FR":
                 answerLength = len(quizData['questions'][x]['answers'])
 
@@ -126,8 +127,8 @@ def bruteforceAnswers(response, headers9, cookies, activityInstanceId, target):
 
                     answer = i
 
+                    answerList.append(correctAnswers(questionId, answerId, questionNumber, questionType, answer, answerWritten))
                     answered += 1
-                    answerList.append(correctAnswers(questionId, ans, questionNumber, questionType, answer, answerWritten))
                     print(f"{bloo}    ► Answered: {white}{answered}/{quizLength}", end="\r") 
                 except:
                     print("COULDN'T FUCKING POST THE ANSWER")
@@ -151,8 +152,9 @@ def bruteforceAnswers(response, headers9, cookies, activityInstanceId, target):
                 answered += 1
                 print(f"{bloo}    ► Answered: {white}{answered}/{quizLength}", end="\r")        
         
-        else:
+        elif answered >= targ:
             if questionType != "FR":
+                print("THIS ROUTE\nTHIS ROUTE\nTHIS ROUTE\nTHIS ROUTE\nTHIS ROUTE")
                 answerLength = len(quizData['questions'][x]['answers'])
 
                 for i in range(answerLength):
@@ -169,24 +171,39 @@ def bruteforceAnswers(response, headers9, cookies, activityInstanceId, target):
                     postAnswer = requests.post('https://api.socrative.com/students/api/responses/', headers=headers9, cookies=cookies, data=data)
                     correctAnswer = json.loads(postAnswer.text)['correct_answer_ids']
                     answerWritten = json.loads(postAnswer.text)['correct_answers']
-                    answered += 1
+                    correctAnswer = str(correctAnswer).strip("[']")
 
                     if ans == correctAnswer:
-                        print("fucking figure out how to make this shit change to an incorrect answer lmfao")
+                        print("\n\n\n\n\n\n\nfucking figure out how to make this shit change to an incorrect answer lmfao")
                 
                     elif ans != correctAnswer:
-                        a = json.loads(postAnswer.text)['correct_answer_ids']
-                        answerId = str(a).strip("[]")
-
                         b = json.loads(postAnswer.text)['correct_answers']
                         answerWritten = str(b).strip("['<p>\/]")
                         
                         answer = i
                         
-                        print(f"{bloo}    ► Answered: {white}{answered}/{quizLength}", end="\r") 
                         answerList.append(correctAnswers(questionId, ans, questionNumber, questionType, answer, answerWritten))
+                        answered += 1
+                        print(f"{bloo}    ► Answered: {white}{answered}/{quizLength}", end="\r") 
                 except:
                     print("COULDN'T FUCKING POST THE ANSWER")
+            elif questionType == "FR":
+                questionNumber = json.loads(response.text)['questions'][x]['order']
+                questionId = json.loads(response.text)['questions'][x]['question_id']
+                data = '{"question_id":'+str(questionId)+',"activity_instance_id":'+str(activityInstanceId)+',"text_answers":[{"answer_text":"Error: 303, Invalid Characters."}],"check_activity":true,"selection_answers":[],"answer_ids":"","answer_text":"."}'
+                postAnswer = requests.post('https://api.socrative.com/students/api/responses/', headers=headers9, cookies=cookies, data=data)
+
+                a = json.loads(postAnswer.text)['correct_answer_ids']
+                answerId = str(a).strip("[']")
+
+                answerWritten = "idk"
+
+                answer = "N/A"
+                questionType = "Free Response"
+
+                answerList.append(correctAnswers(questionId, answerId, questionNumber, questionType, answer, answerWritten))
+                answered += 1
+                print(f"{bloo}    ► Answered: {white}{answered}/{quizLength}", end="\r")      
 
 bruteforceAnswers(response, headers9, cookies, activityInstanceId, target)
 
